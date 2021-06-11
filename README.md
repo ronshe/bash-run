@@ -1,6 +1,6 @@
 # bash-run
 
-## Explanations aand examples
+## Explanations and examples
 **Easy and comfortable way to keep long command lines as short and memorable.**
 
 For example, if you have a long command to remove all old backups except for the first of each month:
