@@ -1,0 +1,184 @@
+#!/bin/bash
+#
+# By Ronny Sherer ©
+#
+export RUN_SAVE_DIR=~/.run_commands
+
+function run()
+{
+    if [ $# -le 0 ]; then
+        echo "Usage: ${FUNCNAME[0]} <command-name>"
+        return 1
+    fi
+    local cmd=$1
+    shift
+    if [ ! -f $RUN_SAVE_DIR/$cmd ]; then
+        echo "No such command: $cmd"
+        return 1
+    fi
+    source $RUN_SAVE_DIR/$cmd
+}
+
+function runsave()
+{
+    if [ $# -le 1 ]; then
+        echo "Usage: ${FUNCNAME[0]} <command-name> <command> [params]"
+        return 1
+    fi
+    mkdir -p $RUN_SAVE_DIR
+    
+    local cmd=$1
+    shift
+    echo "$*" > $RUN_SAVE_DIR/$cmd
+    eval "$*"
+}
+
+function runlist()
+{
+    ls $RUN_SAVE_DIR
+}
+
+function runshow()
+{
+    if [ $# -le 0 ]; then
+        echo "Usage: ${FUNCNAME[0]} <command-name>"
+        return 1
+    fi
+    local cmd=$1
+    shift
+    if [ ! -f $RUN_SAVE_DIR/$cmd ]; then
+        echo "No such command: $cmd"
+        return 1
+    fi
+    cat $RUN_SAVE_DIR/$cmd
+}
+
+function rundel()
+{
+    if [ $# -le 0 ]; then
+        echo "Usage: ${FUNCNAME[0]} <command-name>"
+        return 1
+    fi
+    local cmd=$1
+    shift
+    if [ ! -f $RUN_SAVE_DIR/$cmd ]; then
+        echo "No such command: $cmd"
+        return 1
+    fi
+    rm -i $RUN_SAVE_DIR/$cmd
+}
+
+function runedit()
+{
+    if [ $# -le 0 ]; then
+        echo "Usage: ${FUNCNAME[0]} <command-name>"
+        return 1
+    fi
+    local cmd=$1
+    shift
+    if [ ! -f $RUN_SAVE_DIR/$cmd ]; then
+        echo "No such command: $cmd"
+        return 1
+    fi
+    ${EDITOR:-vi} $RUN_SAVE_DIR/$cmd
+}
+
+function runhelp()
+{
+    if [ $# -le 0 ]; then
+        cat <<HelpEnd
+Run commands:
+run - run the command (by name)
+runsave - Save a new run command
+runlist - List all run commands
+runshow - Show a run command content
+rundel  - Delete a run command
+runedit - Edit run command
+runhelp - show help about run commands
+
+Usage:
+Show this help:
+runhelp
+Show help about a command:
+runhelp command
+
+Save command and imidiatly run it:
+runsave rmcore find ~/ -type f -name core -atime +1 -exec rm {} \\\;
+Run command:
+run rmcore
+Show command:
+runshow rmcore
+find ~/ -type f -name core -atime +1 -exec rm {} \;
+HelpEnd
+        return 0
+    fi
+    case $1 in
+        run)
+            echo "Run a command."
+            echo "Usage:"
+            echo "run <command-name>"
+            ;;
+        runsave)
+            echo "Save a new run command."
+            echo "Usage:"
+            echo "runsave <command-name> <command>"
+            ;;
+
+        runlist)
+            echo "List all run commands."
+            echo "Usage:"
+            echo "runlist"
+            ;;
+
+        runshow)
+            echo "Show a run command content."
+            echo "Usage:"
+            echo "runshow <command-name>"
+            ;;
+
+        rundel)
+            echo "Delete a run command."
+            echo "Usage:"
+            echo "rundel <command-name>"
+            ;;
+
+        runedit)
+            echo "Edit run command."
+            echo "Usage:"
+            echo "runedit <command-name>"
+            ;;
+
+        runhelp)
+            runhelp
+            ;;
+        *)
+            echo "No such command '$1'"
+    esac
+}
+
+# Auto completion
+
+function _run_completions()
+{
+    if [ "${#COMP_WORDS[@]}" != "2" ]; then return; fi
+
+    local commands_number=${RUN_COMPLETION_COMMANDS_NUMBER:-50}
+    local IFS=$'\n'
+    local suggestions=($(compgen -W "$(ls $RUN_SAVE_DIR)" -- "${COMP_WORDS[1]}"))
+
+    if [ "${#suggestions[@]}" == "1" ]; then
+        local number="${suggestions[0]/%\ */}"
+        COMPREPLY=("$number")
+    else
+        for i in "${!suggestions[@]}"; do
+            suggestions[$i]="${suggestions[$i]}"
+        done
+
+        COMPREPLY=("${suggestions[@]}")
+    fi
+}
+complete -F _run_completions run
+complete -F _run_completions runshow
+complete -F _run_completions runedit
+complete -F _run_completions rundel
+complete -W "$(type runhelp|\grep ' - '| sed 's/ - .*//')" runhelp
