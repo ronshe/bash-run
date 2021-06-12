@@ -7,7 +7,7 @@ For example, if you have a long command to remove all old backups except for the
 ```bash
 find /backup -name '????-??-01.*' -prune -o -mtime +7 -exec rm {} \;
 ```
-You can save it:
+You can save it (and immediately run the command):
 ```bash
 runsave rm-backups find /backup -name '????-??-01.*' -prune -o -mtime +7 -exec ls {} \\\;
 ```
@@ -58,3 +58,40 @@ Finally to see help on the commands, use `runhelp`.
    ```bash
    export EDITOR=vim
    ```
+
+## Advanced topics
+Backslash (**\\**) is your best friend.
+
+### Piping
+If you will try to save the following command,
+```bash
+runsave dirs-only ls -l | grep '^dr'
+```
+The immediate result will be good, but if you will try to rerun it using `run dirs-only`, you'll see a wrong result.  
+The reason is that `bash` runs `runsave dirs-only ls -l` and pipes the result to `grep '^dr'`.
+
+If you want to save it all (including the pipe), than you have to tell it to ignore the pipe and look at it as a text character. It will be saved and than ran, but this time it will be treated as a pipe.
+
+The correct line should be (notice the added **\\**):
+```bash
+runsave dirs-only ls -l \| grep '^dr'
+```
+### Ifs, loops and multi multi-commands
+Example:
+```bash
+for f in *
+do
+    if [ -d $f ]
+    then
+        echo $f
+    fi
+done
+```
+Should be one liner:
+```bash
+for f in *; do if [ -d $f ]; then echo $f ; fi ; done
+```
+And backslashed in order to be run-saved:
+```bash
+runsave list-dirs for f in *\; do if [ -d \$f ]\; then echo \$f \; fi \; done
+```
