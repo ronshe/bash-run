@@ -41,6 +41,14 @@
 
 export RUN_SAVE_DIR=~/.run_commands
 
+if [ ! -d $RUN_SAVE_DIR ]; then
+    if [ -e $RUN_SAVE_DIR ]; then
+        echo "$RUN_SAVE_DIR exists but it is not a folder. Run commands will not work"
+    else
+        mkdir $RUN_SAVE_DIR
+    fi
+fi
+
 function run()
 {
     if [ $# -le 0 ]; then
